@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ห้องสมุด</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">ห้องสมุด</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-expanded="false" aria-label="Toggle nav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <% if (user) { %>
+                        <a class="navbar-brand">สวัสดี <%= user.username %></a>
+                        <a href="/borrowed" class="nav-link">การยืมหนังสือของฉัน</a>
+                        <a href="/logout" class="nav-link">ออกจากระบบ</a>
+                    <%} else {%>
+                        <li><a class="nav-link" id="login">เข้าสู่ระบบ</a></li>
+                        <li><a class="nav-link" id="register">ลงทะเบียน</a></li>
+                        <% } %>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="modal fade" id="modal_login" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">เข้าสู่ระบบ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                     <div class="modal-body">
+                        <div class=" pt-2 form-group">
+                            <input type="text" name="user_email" id="login_email" class="form-control" placeholder="Email" required>
+                        </div>
+                        <div class=" pt-2 form-group">
+                            <input type="password" name="user_password" id="login_password" class="form-control" placeholder="Password" required>
+                        </div>
+                        <div id="login_alert" class="mt-2"></div>
+                     </div>
+                     <div class="modal-footer">
+                        <button class="btn btn-primary" id="btn_login">เข้าสู่ระบบ</button>
+                     </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modal_regis" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ลงทะเบียน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                     <div class="modal-body">
+                        <div class="pt-2 form-group">
+                            <input type="text" name="user_name" id="regis_name" class="form-control" placeholder="Name" required>
+                        </div>
+                        <div class="pt-2 form-group">
+                            <input type="text" name="user_email" id="regis_email" class="form-control" placeholder="Email" required>
+                        </div>
+                        <div class="pt-2 form-group">
+                            <input type="password" name="user_password" id="regis_password" class="form-control" placeholder="Password" required>
+                        </div>
+                        <div id="regis_alert" class="mt-2"></div>
+                     </div>
+                     <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" id="btn_regis">ลงทะเบียน</button>
+                     </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modal_borrow" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ยืมหนังสือ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                    <div class="modal-body">
+                        <div class="pt-2 form-group">
+                            <label>วันที่ยืม</label>
+                            <input type="text" name="date_begin" id="date_begin" class="form-control" readonly>
+                        </div>
+                        <div class="pt-2 form-group">
+                            <label>วันที่คืน</label>
+                            <input type="date" name="date_end" id="date_end" class="form-control" placeholder="วันคืนหนังสือ" min="<%=tomorrow%>" max="<%=maxDate%>" required>
+                        </div>
+                        <input type="hidden" name="book_borrow_name" id="book_borrow_name" class="form-control" required>
+                        <div id="borrow_alert" class="mt-2"></div>
+                     </div>
+                     <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" id="btn_borrow_submit">ยืมหนังสือ</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        a, nav-link {
+          cursor: default;
+        }
+        p {
+            color: #ffffff;
+        }
+    </style>
+    <div class="container">
+        <h1 class="text-center pt-5">รายการหนังสือ</h1>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-4 pt-5">
+            <% books.forEach(book => {%>
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="d-flex justify-content-center">
+                            <img src="<%=book.img%>" class="card-img-top p-3 pb-0 img-fluid" style="width: 200px; height: 200px;" alt="<%=book.bookid%>">
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title text-center"><%=book.name%></h4>
+                            <div class="mt-auto">
+                                <p class="card-text pt-1 text-center" style="color: black;">หนังสือทั้งหมด:<%=book.amount%><br>หนังสือที่ถูกยืม:<%=book.borrowed%></p>
+                                <button class="btn btn-primary form-control btn_borrow" data-img="<%=book.img%>" data-name="<%=book.name%>" data-user="<%= user ? user.username : '' %>">ยืมหนังสือ</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% })%>    
+        </div>
+    </div>
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const borrowModal = new bootstrap.Modal(document.getElementById('modal_borrow'));
+            const btnborrow = document.querySelectorAll('.btn_borrow');
+            const openLogin = document.getElementById('login');
+            const openRegister = document.getElementById('register');
+            const loginModal = new bootstrap.Modal(document.getElementById('modal_login'));
+            const registerModal = new bootstrap.Modal(document.getElementById('modal_regis'));
+            const datebegin = document.getElementById('date_begin');
+            const book_borrow_name = document.getElementById('book_borrow_name');
+            const book_borrow_id = document.getElementById('book_borrow_id');
+
+            btnborrow.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const bookimg = this.getAttribute('data-img');
+                    const bookname = this.getAttribute('data-name');
+                    const username = this.getAttribute('data-user');
+                    const bookid = this.getAttribute('data-bookid');
+                   if(username != '') {
+                        borrowModal.show();
+                   } else {
+                        loginModal.show();
+                   }
+                   const today = new Date().toLocaleDateString('en-EN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit'
+                    });
+                    datebegin.setAttribute('placeholder', today);
+                    book_borrow_name.setAttribute('value', bookname);
+                })
+            })
+
+            openLogin.addEventListener('click', () => {
+                loginModal.show();
+            })
+            openRegister.addEventListener('click', () => {
+                registerModal.show();
+            })
+        })
+
+        const btn_borrow_submit = document.getElementById('btn_borrow_submit');
+        const datenedinput = document.getElementById('date_end');
+        const booknameinput = document.getElementById('book_borrow_name');
+        btn_borrow_submit.addEventListener('click', async function () {
+            borrowBook(booknameinput.value, datenedinput.value).then((res) => {
+                if (res.error) {
+                    document.getElementById('borrow_alert').innerHTML =  `<div class="alert alert-danger" role="alert" >${res.error}</div>`
+                } else if (res.result) {
+                    window.location.href = '/borrowed'
+                }
+            }).catch((error) => {
+                console.error(error)
+            })
+        })
+
+        const rename = document.getElementById('regis_name');
+        const reemail = document.getElementById('regis_email');
+        const repassword = document.getElementById('regis_password');
+        const btnRegis = document.getElementById('btn_regis');
+        btnRegis.addEventListener('click', async function () {
+            authRegis(rename.value, reemail.value, repassword.value).then((res) => {
+                if (res.error) {
+                    document.getElementById('regis_alert').innerHTML =  `<div class="alert alert-danger" role="alert" >${res.error}</div>`
+                } else if (res.result) {
+                    location.reload();
+                }
+            }).catch((error) => {
+                console.error(error)
+            })
+        })
+        const loginemail = document.getElementById('login_email');
+        const loginpassword = document.getElementById('login_password');
+        const loginbtn = document.getElementById('btn_login');
+        loginbtn.addEventListener('click', async function () {
+            authLogin(loginemail.value, loginpassword.value).then((res) =>{
+                if (res.error) {
+                    document.getElementById('login_alert').innerHTML =  `<div class="alert alert-danger" role="alert" >${res.error}</div>`
+                } else if (res.result) {
+                    location.reload();
+                }
+            }).catch((error) => {
+                console.error(error);
+            })
+        })
+
+        async function borrowBook( name, end_borrow) {
+            const response = await fetch('/borrowpost', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    book_borrow_name: name,
+                    date_end: end_borrow,
+                })
+            })
+            return response.json()
+        }
+        async function authLogin(email, password) {
+            const response = await fetch('/login', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    user_email: email,
+                    user_password: password,
+                })
+            })
+            return response.json()
+        }
+
+        async function authRegis(name, email, password) {
+            const response = await fetch('/register', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    user_name: name,
+                    user_email: email,
+                    user_password: password,
+                })
+            })
+            return response.json()
+        }
+
+    </script>
+</body>
+</html>
